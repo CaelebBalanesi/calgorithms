@@ -14,7 +14,20 @@
   <h1>Calgorithms</h1>
   <h2>Swarm Algorithms</h2>
   <h3>Boids</h3>
-  <canvas id="BoidsCanvas" width="600" height="400"></canvas>
+  <h4>History</h4>
+  <p>Boids were developed in the 1986 and published in 1987 by Craig Reynolds. They were developed to simulate the flocking behavior of bird-like objects which is where they get their name. Boids are heavily related to a <a href="https://www.jstage.jst.go.jp/article/suisan1932/48/8/48_8_1081/_article">paper</a> written by Ichiro Aoki five years prior about the schooling mechanism of fish. They both follow a very similar set of mechanisms that when tuned properly emerge as very pleasant grouping. The reason for the interest in boids is that none of the birds have any knowledge about any of the other boids knowledge. The emergent behavior strictly comes from the rules that each individual boid follows in relation to every other other boid.</p>
+  <h4>Model</h4>
+  <p>The flocking behavior is an emergent behavior from the simple rules of the boid model. The model in its simplest form has three main rules:</p>
+  <ol>
+    <li>Separation</li>
+    <li>Alignment</li>
+    <li>Cohesion</li>
+  </ol>
+
+
+
+  
+  <canvas onmousemove="getMousePos(event)" id="BoidsCanvas" width="800" height="600"></canvas>
   <script src="js/boids.js"></script>
 
 
