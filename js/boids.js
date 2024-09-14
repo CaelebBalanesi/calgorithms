@@ -1,4 +1,3 @@
-// Create Boid Class
 class Boid {
   constructor(x, y, index) {
     this.index = index;
@@ -18,14 +17,13 @@ class Boid {
     this.max_v = 4;
   }
 
-    
   draw(ctx) {
     ctx.beginPath();
     ctx.arc(this.x, this.y, 1.5, 0, 2 * Math.PI);
     ctx.stroke();
     ctx.beginPath();
     ctx.moveTo(this.x, this.y);
-    ctx.lineTo(this.x + (this.vx * 5), this.y + (this.vy * 5));
+    ctx.lineTo(this.x + this.vx * 5, this.y + this.vy * 5);
     ctx.stroke();
   }
 
@@ -44,37 +42,31 @@ class Boid {
     }
   }
 
-  border_check() {
-    if (this.x < 35) { // left side
+  border_check(width, height) {
+    if (this.x < 35) { 
       this.vx += this.turn;
-    } else if (this.x > 765) { // right side
+    } else if (this.x > width - 35) { 
       this.vx -= this.turn;
-    } else {
-      this.ax = 0;
     }
 
-    if (this.y < 35) { // top side
+    if (this.y < 35) { 
       this.vy += this.turn;
-    } else if (this.y > 565) { // bottom side
+    } else if (this.y > height - 35) { 
       this.vy -= this.turn;
-    } else {
-      this.ay = 0;
     }
   }
 
-  avoid_mouse() {
-    let distance = Math.sqrt(Math.pow(this.x - mouse_x, 2) + Math.pow(this.y - mouse_y, 2));
+  look_for_mouse(mouse_x, mouse_y, mouse_attraction) {
+    let distance = Math.sqrt(
+      Math.pow(this.x - mouse_x, 2) + Math.pow(this.y - mouse_y, 2)
+    );
+    if (distance > this.sight) return;
 
-    if(distance > this.sight) {
-      return
-    }
-    
     let closeness_x = this.x - mouse_x;
     let closeness_y = this.y - mouse_y;
 
-    let mouse_hatred = 0.0125;
-    this.vx += closeness_x * mouse_hatred;
-    this.vy += closeness_y * mouse_hatred;
+    this.vx += closeness_x * mouse_attraction;
+    this.vy += closeness_y * mouse_attraction;
   }
 
   check_other_boids(boids) {
@@ -85,44 +77,40 @@ class Boid {
     let neighbors = 0;
     let position_average_x = 0;
     let position_average_y = 0;
-    
-    for(let i = 0; i < amt_of_boids; i++) {
-      if (this.index == i) {
-        continue;
-      }
-      let dist = distance(this, boids[i]);
-      if (dist < this.sight) { // Insight
-        if (dist < this.space) { // In personal space
-          closeness_x += this.x - boids[i].x;
-          closeness_y += this.y - boids[i].y;
-        } else { // Out of personal space
-          average_x += boids[i].vx;
-          average_y += boids[i].vy;
-          position_average_x += boids[i].x;
-          position_average_y += boids[i].y;
+
+    for (let boid of boids) {
+      if (this.index === boid.index) continue;
+
+      let dist = distance(this, boid);
+      if (dist < this.sight) {
+        if (dist < this.space) {
+          closeness_x += this.x - boid.x;
+          closeness_y += this.y - boid.y;
+        } else {
+          average_x += boid.vx;
+          average_y += boid.vy;
+          position_average_x += boid.x;
+          position_average_y += boid.y;
           neighbors++;
         }
       }
     }
+
     if (neighbors > 0) {
-      average_x = average_x/neighbors;
-      average_y = average_y/neighbors;
-      position_average_x = position_average_x/neighbors;
-      position_average_y = position_average_y/neighbors;
+      average_x /= neighbors;
+      average_y /= neighbors;
+      position_average_x /= neighbors;
+      position_average_y /= neighbors;
+
       this.vx += (average_x - this.vx) * this.matching;
       this.vx += (position_average_x - this.x) * this.centering;
       this.vy += (average_y - this.vy) * this.matching;
       this.vy += (position_average_y - this.y) * this.centering;
     }
+
     this.vx += closeness_x * this.avoidance;
     this.vy += closeness_y * this.avoidance;
   }
-}
-
-// Helper Functions
-function new_random(i) {    
-    let boid = new Boid(Math.random() * 530 + 35, Math.random() * 330 + 35, i);
-    return boid;
 }
 
 function distance(boid1, boid2) {
@@ -133,32 +121,77 @@ function vector_length(x, y) {
   return Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));
 }
 
-function getMousePos(evt) {
-  var rect = canvas.getBoundingClientRect();
-  mouse_x = evt.clientX - rect.left;
-  mouse_y = evt.clientY - rect.top;
-  console.log(`(${mouse_x}, ${mouse_y})`);
-}
-
-var canvas = document.getElementById("BoidsCanvas");
-var ctx = canvas.getContext("2d");
-let amt_of_boids = 100;
-let boids = [];
-let mouse_x = 0;
-let mouse_y = 0;
-
-for (let i = 0; i < amt_of_boids; i++) {
-  let boid = new_random(i);
-  boids.push(boid);
-}
-
-setInterval(function() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  for (let i = 0; i < amt_of_boids; i++) {
-    boids[i].border_check();
-    boids[i].avoid_mouse();
-    boids[i].check_other_boids(boids);
-    boids[i].update();
-    boids[i].draw(ctx);
+class BoidSimulationConfig {
+  constructor(
+    mouse_as_object,
+    mouse_attraction,
+  ) {
+    this.mouse_as_object = mouse_as_object,
+    this.mouse_attraction = mouse_attraction
   }
-}, 16.67);
+}
+
+class BoidSimulation {
+  constructor(canvasId, numBoids, config) {
+    this.canvas = document.getElementById(canvasId);
+    this.ctx = this.canvas.getContext('2d');
+    this.boids = [];
+    this.numBoids = numBoids;
+    this.mouse_x = 0;
+    this.mouse_y = 0;
+    this.simulationInterval = null;
+    this.config = config;
+
+    for (let i = 0; i < this.numBoids; i++) {
+      this.boids.push(new Boid(Math.random() * this.canvas.width, Math.random() * this.canvas.height, i));
+    }
+
+    this.canvas.addEventListener('mousemove', (e) => this.getMousePos(e));
+  }
+
+  getMousePos(evt) {
+    var rect = this.canvas.getBoundingClientRect();
+    this.mouse_x = evt.clientX - rect.left;
+    this.mouse_y = evt.clientY - rect.top;
+  }
+
+  start() {
+    this.simulationInterval = setInterval(() => {
+      this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+      for (let boid of this.boids) {
+        boid.border_check(this.canvas.width, this.canvas.height);
+        if (this.config.mouse_as_object) {
+          boid.look_for_mouse(this.mouse_x, this.mouse_y, this.config.mouse_attraction);
+        }
+        boid.check_other_boids(this.boids);
+        boid.update();
+        boid.draw(this.ctx);
+      }
+    }, 16.67);
+  }
+
+  stop() {
+    clearInterval(this.simulationInterval);
+  }
+}
+
+let sims = [];
+
+function createSimulations() {
+  var sim1config = new BoidSimulationConfig(true, -0.01);
+  var sim1 = new BoidSimulation('BoidsCanvas', 100, sim1config);
+
+  sims.push(sim1);
+}
+
+function startSim(index) {
+  sims[index].start();
+}
+
+function stopSim(index) {
+  sims[index].stop();
+}
+
+window.onload = createSimulations;
+

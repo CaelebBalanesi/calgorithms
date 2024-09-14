@@ -9,8 +9,6 @@
 </head>
 
 <body>
-  <script src="js/test.js"></script>
-
   <h1>Calgorithms</h1>
   <h2>Swarm Algorithms</h2>
   <h3>Boids</h3>
@@ -19,18 +17,15 @@
   <h4>Model</h4>
   <p>The flocking behavior is an emergent behavior from the simple rules of the boid model. The model in its simplest form has three main rules:</p>
   <ol>
-    <li>Separation</li>
-    <li>Alignment</li>
-    <li>Cohesion</li>
+    <li><b>Separation</b>: Dont get too close to neighbors</li>
+    <li><b>Alignment</b>: Fly in the same direction as neighbors</li>
+    <li><b>Cohesion</b>: Get to the average position of neighbors</li>
   </ol>
-
-
-
   
-  <canvas onmousemove="getMousePos(event)" id="BoidsCanvas" width="800" height="600"></canvas>
+  <canvas id="BoidsCanvas" width="800" height="600"></canvas><br>
+  <button onclick="startSim(0)">Start</button>
+  <button onclick="stopSim(0)">Stop</button>
   <script src="js/boids.js"></script>
-
-
 
   <h3>Vicsek Model</h3>
 
