@@ -13,7 +13,7 @@
   <h2>Swarm Algorithms</h2>
   <h3>Boids</h3>
   <h4>History</h4>
-  <p>Boids were developed in the 1986 and published in 1987 by Craig Reynolds. They were developed to simulate the flocking behavior of bird-like objects which is where they get their name. Boids are heavily related to a <a href="https://www.jstage.jst.go.jp/article/suisan1932/48/8/48_8_1081/_article">paper</a> written by Ichiro Aoki five years prior about the schooling mechanism of fish. They both follow a very similar set of mechanisms that when tuned properly emerge as very pleasant grouping. The reason for the interest in boids is that none of the birds have any knowledge about any of the other boids knowledge. The emergent behavior strictly comes from the rules that each individual boid follows in relation to every other other boid.</p>
+  <p>Boids were developed by Craig Reynolds in 1986 and published in 1987. The concept was created to simulate the flocking behavior of bird-like objects, which inspired their name. Boids are closely related to a <a href="https://www.jstage.jst.go.jp/article/suisan1932/48/8/48_8_1081/_article">paper</a> written by Ichiro Aoki five years earlier, which explored the schooling behavior of fish. Both models use similar mechanisms that, when properly adjusted, produce group movement. The key interest in boids lies in the fact that none of the individual 'birds' have knowledge of each other's actions. The emergent behavior arises solely from the simple rules each boid follows in response to its neighbors.</p>
   <h4>Model</h4>
   <p>The flocking behavior is an emergent behavior from the simple rules of the boid model. The model in its simplest form has three main rules:</p>
   <ol>
@@ -21,18 +21,37 @@
     <li><b>Alignment</b>: Fly in the same direction as neighbors</li>
     <li><b>Cohesion</b>: Get to the average position of neighbors</li>
   </ol>
-  
-  <canvas id="BoidsCanvas" width="800" height="600"></canvas><br>
+  <p>With these simple rules this simple flocking behavior emerges.</p>
+  <canvas id="BoidsCanvas0" width="800" height="600"></canvas><br>
   <button onclick="startSim(0)">Start</button>
   <button onclick="stopSim(0)">Stop</button>
-  <script src="js/boids.js"></script>
+  <button onclick="resetSim(0)">Reset</button>
 
+
+
+
+
+
+
+
+  <script src="js/boids.js"></script>
   <h3>Vicsek Model</h3>
 
-
-
-
-
+  <h2>Bezier Curves</h2>
+  <div id="bezierContainer" style="position: relative; width: 800px; height: 600px;">
+    <canvas id="BezierCanvas" width="800" height="600"></canvas>
+    <div id="nodes" style="position: absolute; top: 0; left: 0;"></div>
+  </div>  
+    
+  <div class="controls">
+    <button class="button" id="drawLinesButton">Draw Lines</button>
+    <button class="button" id="drawArcButton">Draw Arc</button>
+    <input id="progress" type="range" min="0" max="1" step="0.001">
+    <p id="progress-num"></p>
+    <input id="numOfNodes" type="number">
+    <button id="generateNodesButton">Generate</button>
+  </div>
+  <script src="js/bezier.js"></script>
 </body>
 
 </html>

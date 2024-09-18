@@ -174,13 +174,21 @@ class BoidSimulation {
   stop() {
     clearInterval(this.simulationInterval);
   }
+
+  reset() {
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this.boids = [];
+    for (let i = 0; i < this.numBoids; i++) {
+      this.boids.push(new Boid(Math.random() * this.canvas.width, Math.random() * this.canvas.height, i));
+    }
+  }
 }
 
 let sims = [];
 
 function createSimulations() {
-  var sim1config = new BoidSimulationConfig(true, -0.01);
-  var sim1 = new BoidSimulation('BoidsCanvas', 100, sim1config);
+  var sim1config = new BoidSimulationConfig(true, 0);
+  var sim1 = new BoidSimulation('BoidsCanvas0', 100, sim1config);
 
   sims.push(sim1);
 }
@@ -191,6 +199,10 @@ function startSim(index) {
 
 function stopSim(index) {
   sims[index].stop();
+}
+
+function resetSim(index) {
+  sims[index].reset();
 }
 
 window.onload = createSimulations;
