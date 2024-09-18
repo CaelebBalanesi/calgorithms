@@ -1,115 +1,180 @@
 class Boid {
   constructor(x, y, index) {
-    this.index = index;
+      this.index = index;
+      this.x = x;
+      this.y = y;
+      this.vx = Math.random() * 5 - 2.5;
+      this.vy = Math.random() * 5 - 2.5;
+      this.ax = 0;
+      this.ay = 0;
+      this.turn = 0.225;
+      this.space = 7.5;
+      this.sight = 75;
+      this.avoidance = 0.005;
+      this.matching = 0.05;
+      this.centering = 0.0005;
+      this.min_v = 1.5;
+      this.max_v = 4;
+      this.smell = 15;
+  }
+
+  draw(ctx) {
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, 1.5, 0, 2 * Math.PI);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(this.x, this.y);
+      ctx.lineTo(this.x + this.vx * 5, this.y + this.vy * 5);
+      ctx.stroke();
+  }
+
+  update() {
+      this.vx += this.ax;
+      this.vy += this.ay;
+      this.x += this.vx;
+      this.y += this.vy;
+
+      // Normalize velocity if necessary
+      let velocity_vector_magnitude = vector_length(this.vx, this.vy);
+      if (velocity_vector_magnitude > this.max_v) {
+          this.vx = (this.vx / velocity_vector_magnitude) * this.max_v;
+          this.vy = (this.vy / velocity_vector_magnitude) * this.max_v;
+      } else if (velocity_vector_magnitude < this.min_v) {
+          this.vx = (this.vx / velocity_vector_magnitude) * this.min_v;
+          this.vy = (this.vy / velocity_vector_magnitude) * this.min_v;
+      }
+
+      // Reset acceleration
+      this.ax = 0;
+      this.ay = 0;
+  }
+
+  border_check(width, height) {
+      if (this.x < 35) {
+          this.vx += this.turn;
+      } else if (this.x > width - 35) {
+          this.vx -= this.turn;
+      }
+
+      if (this.y < 35) {
+          this.vy += this.turn;
+      } else if (this.y > height - 35) {
+          this.vy -= this.turn;
+      }
+  }
+
+  look_for_mouse(mouse_x, mouse_y) {
+      let distance = Math.sqrt(
+          Math.pow(this.x - mouse_x, 2) + Math.pow(this.y - mouse_y, 2)
+      );
+      if (distance > this.sight) {
+        return [0, 0];
+      }
+
+      let closeness_x = this.x - mouse_x;
+      let closeness_y = this.y - mouse_y;
+
+      return [closeness_x, closeness_y];      
+  }
+
+  calculate_separation(boids) {
+      let closeness_x = 0;
+      let closeness_y = 0;
+      for (let boid of boids) {
+          if (this.index === boid.index) continue;
+
+          let dist = distance(this, boid);
+          if (dist < this.space) {
+              closeness_x += this.x - boid.x;
+              closeness_y += this.y - boid.y;
+          }
+      }
+
+      return [closeness_x * this.avoidance, closeness_y * this.avoidance];
+  }
+
+  calculate_alignment(boids) {
+      let average_vx = 0;
+      let average_vy = 0;
+      let neighbors = 0;
+
+      for (let boid of boids) {
+          if (this.index === boid.index) continue;
+
+          let dist = distance(this, boid);
+          if (dist < this.sight) {
+              average_vx += boid.vx;
+              average_vy += boid.vy;
+              neighbors++;
+          }
+      }
+
+      if (neighbors > 0) {
+          average_vx /= neighbors;
+          average_vy /= neighbors;
+
+          let dvx = average_vx - this.vx;
+          let dvy = average_vy - this.vy;
+
+          return [dvx * this.matching, dvy * this.matching];
+      }
+
+      return [0, 0];
+  }
+
+  calculate_cohesion(boids) {
+      let position_average_x = 0;
+      let position_average_y = 0;
+      let neighbors = 0;
+
+      for (let boid of boids) {
+          if (this.index === boid.index) continue;
+
+          let dist = distance(this, boid);
+          if (dist < this.sight) {
+              position_average_x += boid.x;
+              position_average_y += boid.y;
+              neighbors++;
+          }
+      }
+
+      if (neighbors > 0) {
+          position_average_x /= neighbors;
+          position_average_y /= neighbors;
+
+          let dx = position_average_x - this.x;
+          let dy = position_average_y - this.y;
+
+          return [dx * this.centering, dy * this.centering];
+      }
+
+      return [0, 0];
+  }
+
+  release_pheromone(pheromones, strength) {
+    let p = new Pheromone(this.x, this.y, strength);
+    pheromones.push(p);
+  }
+
+  calculate_fear(pheromones) {
+    return [0, 0];
+  }
+}
+
+class Pheromone {
+  constructor(x, y, strength) {
     this.x = x;
     this.y = y;
-    this.vx = Math.random() * 5 - 2.5;
-    this.vy = Math.random() * 5 - 2.5;
-    this.ax = 0;
-    this.ay = 0;
-    this.turn = 0.225;
-    this.space = 7.5;
-    this.sight = 35;
-    this.avoidance = 0.005;
-    this.matching = 0.05;
-    this.centering = 0.0005;
-    this.min_v = 1.5;
-    this.max_v = 4;
+    this.strength = strength;
+    this.t = 0;
   }
 
   draw(ctx) {
     ctx.beginPath();
-    ctx.arc(this.x, this.y, 1.5, 0, 2 * Math.PI);
+    ctx.arc(95, 50, 40, 0, 2 * Math.PI);
+    ctx.fillStyle = "rgba(255, 0, 0, 0.5)";
+    ctx.fill();
     ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(this.x, this.y);
-    ctx.lineTo(this.x + this.vx * 5, this.y + this.vy * 5);
-    ctx.stroke();
-  }
-
-  update() {
-    this.vx += this.ax;
-    this.vy += this.ay;
-    this.x += this.vx;
-    this.y += this.vy;
-    let velocity_vector_magnitude = vector_length(this.vx, this.vy);
-    if (velocity_vector_magnitude > this.max_v) {
-      this.vx = (this.vx / velocity_vector_magnitude) * this.max_v;
-      this.vy = (this.vy / velocity_vector_magnitude) * this.max_v;
-    } else if (velocity_vector_magnitude < this.min_v) {
-      this.vx = (this.vx / velocity_vector_magnitude) * this.min_v;
-      this.vy = (this.vy / velocity_vector_magnitude) * this.min_v;
-    }
-  }
-
-  border_check(width, height) {
-    if (this.x < 35) { 
-      this.vx += this.turn;
-    } else if (this.x > width - 35) { 
-      this.vx -= this.turn;
-    }
-
-    if (this.y < 35) { 
-      this.vy += this.turn;
-    } else if (this.y > height - 35) { 
-      this.vy -= this.turn;
-    }
-  }
-
-  look_for_mouse(mouse_x, mouse_y, mouse_attraction) {
-    let distance = Math.sqrt(
-      Math.pow(this.x - mouse_x, 2) + Math.pow(this.y - mouse_y, 2)
-    );
-    if (distance > this.sight) return;
-
-    let closeness_x = this.x - mouse_x;
-    let closeness_y = this.y - mouse_y;
-
-    this.vx += closeness_x * mouse_attraction;
-    this.vy += closeness_y * mouse_attraction;
-  }
-
-  check_other_boids(boids) {
-    let closeness_x = 0;
-    let closeness_y = 0;
-    let average_y = 0;
-    let average_x = 0;
-    let neighbors = 0;
-    let position_average_x = 0;
-    let position_average_y = 0;
-
-    for (let boid of boids) {
-      if (this.index === boid.index) continue;
-
-      let dist = distance(this, boid);
-      if (dist < this.sight) {
-        if (dist < this.space) {
-          closeness_x += this.x - boid.x;
-          closeness_y += this.y - boid.y;
-        } else {
-          average_x += boid.vx;
-          average_y += boid.vy;
-          position_average_x += boid.x;
-          position_average_y += boid.y;
-          neighbors++;
-        }
-      }
-    }
-
-    if (neighbors > 0) {
-      average_x /= neighbors;
-      average_y /= neighbors;
-      position_average_x /= neighbors;
-      position_average_y /= neighbors;
-
-      this.vx += (average_x - this.vx) * this.matching;
-      this.vx += (position_average_x - this.x) * this.centering;
-      this.vy += (average_y - this.vy) * this.matching;
-      this.vy += (position_average_y - this.y) * this.centering;
-    }
-
-    this.vx += closeness_x * this.avoidance;
-    this.vy += closeness_y * this.avoidance;
   }
 }
 
@@ -124,10 +189,10 @@ function vector_length(x, y) {
 class BoidSimulationConfig {
   constructor(
     mouse_as_object,
-    mouse_attraction,
+    fear_enabled
   ) {
     this.mouse_as_object = mouse_as_object,
-    this.mouse_attraction = mouse_attraction
+    this.fear_enabled = fear_enabled
   }
 }
 
@@ -141,12 +206,15 @@ class BoidSimulation {
     this.mouse_y = 0;
     this.simulationInterval = null;
     this.config = config;
+    this.pheromones = [];
 
     for (let i = 0; i < this.numBoids; i++) {
       this.boids.push(new Boid(Math.random() * this.canvas.width, Math.random() * this.canvas.height, i));
     }
 
-    this.canvas.addEventListener('mousemove', (e) => this.getMousePos(e));
+    if (this.config.mouse_as_object) {
+      this.canvas.addEventListener('mousemove', (e) => this.getMousePos(e));
+    }
   }
 
   getMousePos(evt) {
@@ -162,9 +230,21 @@ class BoidSimulation {
       for (let boid of this.boids) {
         boid.border_check(this.canvas.width, this.canvas.height);
         if (this.config.mouse_as_object) {
-          boid.look_for_mouse(this.mouse_x, this.mouse_y, this.config.mouse_attraction);
+          var [mouse_distance_x, mouse_distance_y] = boid.look_for_mouse(this.mouse_x, this.mouse_y);
+          boid.release_pheromone(this.pheromones);
         }
-        boid.check_other_boids(this.boids);
+
+        if (this.config.fear_enabled) {
+          var [fear_x, fear_y] = boid.calculate_fear(this.pheromones);
+        }
+
+        let [separation_x, separation_y] = boid.calculate_separation(this.boids);
+        let [alignment_x, alignment_y] = boid.calculate_alignment(this.boids);
+        let [cohesion_x, cohesion_y] = boid.calculate_cohesion(this.boids);
+
+        boid.ax = separation_x + alignment_x + cohesion_x;
+        boid.ay = separation_y + alignment_y + cohesion_y;
+
         boid.update();
         boid.draw(this.ctx);
       }
@@ -187,9 +267,12 @@ class BoidSimulation {
 let sims = [];
 
 function createSimulations() {
-  var sim1config = new BoidSimulationConfig(true, 0);
-  var sim1 = new BoidSimulation('BoidsCanvas0', 100, sim1config);
+  var sim0config = new BoidSimulationConfig(false, false);
+  var sim0 = new BoidSimulation('BoidsCanvas0', 100, sim0config);
+  var sim1config = new BoidSimulationConfig(true, true);
+  var sim1 = new BoidSimulation('BoidsCanvas1', 100, sim1config);
 
+  sims.push(sim0);
   sims.push(sim1);
 }
 
