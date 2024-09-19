@@ -343,7 +343,7 @@ class BoidSimulation {
       while (pheromone_index < this.pheromones.length) {
         let pheromone = this.pheromones[pheromone_index];
         pheromone.update();
-        //pheromone.draw(this.ctx);
+        pheromone.draw(this.ctx);
   
         if (pheromone.current_strength <= 0) {
           this.pheromones.splice(pheromone_index, 1);
