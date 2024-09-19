@@ -1,3 +1,4 @@
+// Ultility Functions
 const Utils = {
   distance(x1, y1, x2, y2) {
     return Math.hypot(x2 - x1, y2 - y1);
@@ -13,6 +14,7 @@ const Utils = {
   }
 };
 
+// Pheromone Class
 class Pheromone {
   constructor(x, y, strength, lifeTime, ownerIndex) {
     this.x = x;
@@ -24,6 +26,7 @@ class Pheromone {
     this.ownerIndex = ownerIndex;
   }
 
+  // Update the pheromones state
   update() {
     this.t++;
     const T = this.lifeTime;
@@ -34,20 +37,22 @@ class Pheromone {
 
     if (t <= T) {
       if (t <= T_peak) {
-        this.currentStrength = sMin + (sMax - sMin) * (t / T_peak);
+        this.currentStrength = sMin + (sMax - sMin) * (t / T_peak); // Increase to max strength if before peak time
       } else {
-        this.currentStrength = sMax * (1 - ((t - T_peak) / (T - T_peak)));
+        this.currentStrength = sMax * (1 - ((t - T_peak) / (T - T_peak))); // Decrease to 0 if after peak time
       }
     } else {
-      this.currentStrength = 0;
+      this.currentStrength = 0; // Set to 0 after lifetime to delete
     }
   }
 
+  // Draw pheromone as red circle
   draw(ctx) {
     if (this.currentStrength > 0) {
       ctx.beginPath();
       ctx.arc(this.x, this.y, this.currentStrength, 0, 2 * Math.PI);
-      const opacity = this.currentStrength / this.startStrength;
+      const opacity = (this.currentStrength / this.startStrength) * 0.2;
+      ctx.strokeStyle = `rgba(255, 0, 0, ${opacity})`;
       ctx.fillStyle = `rgba(255, 0, 0, ${opacity})`;
       ctx.fill();
       ctx.stroke();
@@ -55,8 +60,10 @@ class Pheromone {
   }
 }
 
+// Boid Class
 class Boid {
   constructor(x, y, index, options = {}) {
+    // Boid Data
     this.index = index;
     this.x = x;
     this.y = y;
@@ -65,15 +72,17 @@ class Boid {
     this.ax = 0;
     this.ay = 0;
 
+    // Boid Parameters
     this.turn = options.turn || 0.225;
     this.space = options.space || 10;
-    this.sight = options.sight || 200;
+    this.sight = options.sight || 50;
     this.avoidance = options.avoidance || 0.01;
     this.matching = options.matching || 0.05;
     this.centering = options.centering || 0.0005;
     this.minV = options.minV || 1.5;
     this.maxV = options.maxV || 4;
 
+    // Boid Fear and Pheromone Paramters
     this.fearTimer = 0;
     this.fearReleaseDuration = options.fearReleaseDuration || 5;
     this.escapeAcceleration = options.escapeAcceleration || 0.2;
@@ -82,22 +91,26 @@ class Boid {
     this.escapeTimer = 0;
     this.escapeDirectionX = 0;
     this.escapeDirectionY = 0;
-
     this.separationAx = 0;
     this.separationAy = 0;
   }
 
+  // Draw the boid
   draw(ctx) {
+    ctx.strokeStyle = "black";
+    // Draw Boid position
     ctx.beginPath();
     ctx.arc(this.x, this.y, 1.5, 0, 2 * Math.PI);
     ctx.stroke();
 
+    // Draw Boid velocity vector
     ctx.beginPath();
     ctx.moveTo(this.x, this.y);
     ctx.lineTo(this.x + this.vx * 5, this.y + this.vy * 5);
     ctx.stroke();
   }
 
+  // Update Boid information
   update() {
     if (this.escapeTimer > 0) {
       const desiredVx = this.escapeDirectionX * this.maxV;
@@ -360,13 +373,13 @@ class BoidSimulation {
       if (this.config.mouseAsObject) {
         const distance = boid.distanceFromPosition(this.mouseX, this.mouseY);
         if (distance < boid.sight) {
-          boid.releasePheromone(this.pheromones, 20, 60);
+          boid.releasePheromone(this.pheromones, 17.5, 40);
         }
       }
 
       if (boid.fearTimer > 0) {
-        const weakerStrength = 10;
-        boid.releasePheromone(this.pheromones, weakerStrength, 60);
+        const weakerStrength = 5;
+        boid.releasePheromone(this.pheromones, weakerStrength, 30);
         boid.fearTimer--;
       }
 
