@@ -8,14 +8,17 @@ class Boid {
       this.ax = 0;
       this.ay = 0;
       this.turn = 0.225;
-      this.space = 7.5;
-      this.sight = 75;
-      this.avoidance = 0.005;
+      this.space = 10;
+      this.sight = 200;
+      this.avoidance = 0.01;
       this.matching = 0.05;
       this.centering = 0.0005;
+      this.nerves = 0.001;
       this.min_v = 1.5;
       this.max_v = 4;
       this.smell = 15;
+      this.fear_timer = 0;
+      this.fear_release_duration = 10;
   }
 
   draw(ctx) {
@@ -63,18 +66,8 @@ class Boid {
       }
   }
 
-  look_for_mouse(mouse_x, mouse_y) {
-      let distance = Math.sqrt(
-          Math.pow(this.x - mouse_x, 2) + Math.pow(this.y - mouse_y, 2)
-      );
-      if (distance > this.sight) {
-        return [0, 0];
-      }
-
-      let closeness_x = this.x - mouse_x;
-      let closeness_y = this.y - mouse_y;
-
-      return [closeness_x, closeness_y];      
+  distance_from_position(x, y) {
+      return Math.pow(this.x - x, 2) + Math.pow(this.y - y, 2)
   }
 
   calculate_separation(boids) {
@@ -151,32 +144,114 @@ class Boid {
       return [0, 0];
   }
 
-  release_pheromone(pheromones, strength) {
-    let p = new Pheromone(this.x, this.y, strength);
+  release_pheromone(pheromones, strength, life_time) {
+    let p = new Pheromone(this.x, this.y, strength, life_time);
     pheromones.push(p);
   }
 
   calculate_fear(pheromones) {
-    return [0, 0];
+    let pheromone_fear_x = 0;
+    let pheromone_fear_y = 0;
+    let total_fear_strength = 0;
+    let pheromones_smelled = 0;
+  
+    for (let pheromone of pheromones) {
+      let distance = this.distance_from_position(pheromone.x, pheromone.y);
+      if (pheromone.current_strength > distance) {
+        pheromone_fear_x += pheromone.x * pheromone.current_strength;
+        pheromone_fear_y += pheromone.y * pheromone.current_strength;
+        total_fear_strength += pheromone.current_strength;
+        pheromones_smelled++;
+      }
+    }
+  
+    if (pheromones_smelled > 0) {
+      let avg_pheromone_x = pheromone_fear_x / total_fear_strength;
+      let avg_pheromone_y = pheromone_fear_y / total_fear_strength;
+  
+      // Compute vector from pheromone to boid (reverse direction)
+      let dx = this.x - avg_pheromone_x;
+      let dy = this.y - avg_pheromone_y;
+  
+      // Normalize the vector
+      let length = vector_length(dx, dy);
+      if (length > 0) {
+        dx /= length;
+        dy /= length;
+      }
+  
+      // Add randomness to the direction
+      let randomAngle = (Math.random() - 0.5) * Math.PI;
+      let sinAngle = Math.sin(randomAngle);
+      let cosAngle = Math.cos(randomAngle);
+      let new_dx = dx * cosAngle - dy * sinAngle;
+      let new_dy = dx * sinAngle + dy * cosAngle;
+  
+      // Scale by 'nerves' parameter and average fear strength
+      let scaled_fear = total_fear_strength / pheromones_smelled / this.nerves;
+      let fear_x = new_dx * this.nerves * scaled_fear;
+      let fear_y = new_dy * this.nerves * scaled_fear;
+  
+      // Set the fear timer to start or reset it
+      this.fear_timer = this.fear_release_duration;
+  
+      return {
+        fear_vector: [fear_x, fear_y],
+        fear_strength: total_fear_strength / pheromones_smelled
+      };
+    }
+  
+    return {
+      fear_vector: [0, 0],
+      fear_strength: 0
+    };
   }
+  
 }
 
 class Pheromone {
-  constructor(x, y, strength) {
+  constructor(x, y, strength, life_time) {
     this.x = x;
     this.y = y;
-    this.strength = strength;
-    this.t = 0;
+    this.start_strength = strength; // Maximum strength (s_max)
+    this.current_strength = strength * 0.5; // Start at medium strength
+    this.life_time = life_time; // Total lifespan (T)
+    this.t = 0; // Current time
+  }
+
+  update() {
+    this.t++;
+    let T = this.life_time;
+    let s_max = this.start_strength;
+    let s_min = s_max * 0.5; // Starting at 50% of s_max
+    let t = this.t;
+    let T_peak = T / 2; // Time at which strength is maximum
+
+    if (t <= T) {
+      if (t <= T_peak) {
+        // Growth phase
+        this.current_strength = s_min + (s_max - s_min) * (t / T_peak);
+      } else {
+        // Decay phase
+        this.current_strength = s_max * (1 - ((t - T_peak) / (T - T_peak)));
+      }
+    } else {
+      this.current_strength = 0;
+    }
   }
 
   draw(ctx) {
-    ctx.beginPath();
-    ctx.arc(95, 50, 40, 0, 2 * Math.PI);
-    ctx.fillStyle = "rgba(255, 0, 0, 0.5)";
-    ctx.fill();
-    ctx.stroke();
+    if (this.current_strength > 0) {
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.current_strength, 0, 2 * Math.PI);
+      let opacity = this.current_strength / this.start_strength;
+      ctx.fillStyle = `rgba(255, 0, 0, ${opacity})`;
+      ctx.fill();
+      ctx.stroke();
+    }
   }
 }
+
 
 function distance(boid1, boid2) {
   return Math.sqrt(Math.pow(boid1.x - boid2.x, 2) + Math.pow(boid1.y - boid2.y, 2));
@@ -226,29 +301,57 @@ class BoidSimulation {
   start() {
     this.simulationInterval = setInterval(() => {
       this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-
+  
       for (let boid of this.boids) {
         boid.border_check(this.canvas.width, this.canvas.height);
+        let fear_vector = [0, 0];
+        let fear_strength = 0;
+  
         if (this.config.mouse_as_object) {
-          var [mouse_distance_x, mouse_distance_y] = boid.look_for_mouse(this.mouse_x, this.mouse_y);
-          boid.release_pheromone(this.pheromones);
+          let distance = boid.distance_from_position(this.mouse_x, this.mouse_y);
+          if (distance < boid.sight) {
+            boid.release_pheromone(this.pheromones, 20, 60);
+          }
         }
-
+  
         if (this.config.fear_enabled) {
-          var [fear_x, fear_y] = boid.calculate_fear(this.pheromones);
+          let fear_result = boid.calculate_fear(this.pheromones);
+          fear_vector = fear_result.fear_vector;
+          fear_strength = fear_result.fear_strength;
         }
-
+  
+        // If the boid is scared, release pheromones and decrement fear_timer
+        if (boid.fear_timer > 0) {
+          let weaker_strength = 10; // Adjust strength as needed
+          boid.release_pheromone(this.pheromones, weaker_strength, 60);
+          boid.fear_timer--;
+        }
+  
         let [separation_x, separation_y] = boid.calculate_separation(this.boids);
         let [alignment_x, alignment_y] = boid.calculate_alignment(this.boids);
         let [cohesion_x, cohesion_y] = boid.calculate_cohesion(this.boids);
-
-        boid.ax = separation_x + alignment_x + cohesion_x;
-        boid.ay = separation_y + alignment_y + cohesion_y;
-
+  
+        boid.ax = separation_x + alignment_x + cohesion_x + fear_vector[0];
+        boid.ay = separation_y + alignment_y + cohesion_y + fear_vector[1];
+  
         boid.update();
         boid.draw(this.ctx);
       }
-    }, 16.67);
+  
+      // Update pheromones
+      let pheromone_index = 0;
+      while (pheromone_index < this.pheromones.length) {
+        let pheromone = this.pheromones[pheromone_index];
+        pheromone.update();
+        //pheromone.draw(this.ctx);
+  
+        if (pheromone.current_strength <= 0) {
+          this.pheromones.splice(pheromone_index, 1);
+        } else {
+          pheromone_index++;
+        }
+      }
+    }, 16.67);  
   }
 
   stop() {
@@ -270,7 +373,7 @@ function createSimulations() {
   var sim0config = new BoidSimulationConfig(false, false);
   var sim0 = new BoidSimulation('BoidsCanvas0', 100, sim0config);
   var sim1config = new BoidSimulationConfig(true, true);
-  var sim1 = new BoidSimulation('BoidsCanvas1', 100, sim1config);
+  var sim1 = new BoidSimulation('BoidsCanvas1', 250, sim1config);
 
   sims.push(sim0);
   sims.push(sim1);
