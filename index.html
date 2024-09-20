@@ -1,62 +1,89 @@
-  <!DOCTYPE html>
-  <html>
+<!DOCTYPE html>
+<html>
 
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Algorithms Study</title>
-    <link rel="stylesheet" href="css/styles.css">
-  </head>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Algorithms Study</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
 
-  <body>
-    <h1>Calgorithms</h1>
-    <h2>Swarm Algorithms</h2>
-    <h3>Boids</h3>
-    <figure>
-      <img src="assets/Boids_Xen.webp">
-      <figcaption>Boids from Half Life</figcaption>
-    </figure>
-    <h4>History</h4>
-    <p>Boids were developed by Craig Reynolds in 1986 and published in 1987. The concept was created to simulate the flocking behavior of bird-like objects, which inspired their name. Boids are closely related to a <a href="https://www.jstage.jst.go.jp/article/suisan1932/48/8/48_8_1081/_article">paper</a> written by Ichiro Aoki five years earlier, which explored the schooling behavior of fish. Both models use similar mechanisms that, when properly adjusted, produce group movement. The key interest in boids lies in the fact that none of the individual 'birds' have knowledge of each other's actions. The emergent behavior arises solely from the simple rules each boid follows in response to its neighbors.</p>
-    <h4>Model</h4>
-    <p>The flocking behavior is an emergent behavior from the simple rules of the boid model. The model in its simplest form has three main rules:</p>
-    <ol>
-      <li><b>Separation</b>: Dont get too close to neighbors</li>
-      <li><b>Alignment</b>: Fly in the same direction as neighbors</li>
-      <li><b>Cohesion</b>: Get to the average position of neighbors</li>
-    </ol>
-    <p>With these simple rules this simple flocking behavior emerges.</p>
-    <canvas id="BoidsCanvas0" width="800" height="600"></canvas><br>
-    <button onclick="startSim(0)">Start</button>
-    <button onclick="stopSim(0)">Stop</button>
-    <button onclick="resetSim(0)">Reset</button>
-    <h4>Extensions</h4>
-    <p>There are many extensions to the boid model that can be added to enhance the flocking behavior with more interesting behaviors.</p>
-    <h5>Emotions</h5>
-    <p><a href="https://link.springer.com/article/10.1007/s00354-007-0009-5">paper</a></p>
-    <canvas id="BoidsCanvas1" width="800" height="600"></canvas><br>
-    <button onclick="startSim(1)">Start</button>
-    <button onclick="stopSim(1)">Stop</button>
-    <button onclick="resetSim(1)">Reset</button>
+<body>
+  <h1>Calgorithms</h1>
+  <h2>Swarm Algorithms</h2>
+  <h3>Boids</h3>
+  <figure>
+    <img src="assets/Boids_Xen.webp">
+    <figcaption>Boids from Half Life</figcaption>
+  </figure>
+  <h4>History</h4>
+  <p>Boids were developed by Craig Reynolds in 1986 and published in 1987. The concept was created to simulate the
+    flocking behavior of bird-like objects, which inspired their name. Boids are closely related to a <a
+      href="https://www.jstage.jst.go.jp/article/suisan1932/48/8/48_8_1081/_article">paper</a> written by Ichiro Aoki
+    five years earlier, which explored the schooling behavior of fish. Both models use similar mechanisms that, when
+    properly adjusted, produce group movement. The key interest in boids lies in the fact that none of the individual
+    'birds' have knowledge of each other's actions. The emergent behavior arises solely from the simple rules each boid
+    follows in response to its neighbors.</p>
+  <h4>Model</h4>
+  <p>The flocking behavior is an emergent behavior from the simple rules of the boid model. The model in its simplest
+    form has three main rules:</p>
+  <ol>
+    <li><b>Separation</b>: Dont get too close to neighbors</li>
+    <li><b>Alignment</b>: Fly in the same direction as neighbors</li>
+    <li><b>Cohesion</b>: Get to the average position of neighbors</li>
+  </ol>
+  <p>With these simple rules this simple flocking behavior emerges.</p>
+  <canvas id="BoidsCanvas0" width="800" height="600"></canvas><br>
+  <button onclick="startSim(0)">Start</button>
+  <button onclick="stopSim(0)">Stop</button>
+  <button onclick="resetSim(0)">Reset</button>
+  <h4>Extensions</h4>
+  <p>There are many extensions to the boid model that can be added to enhance the flocking behavior with more
+    interesting behaviors.</p>
+  <h5>Fear and Pheromones</h5>
+  <p>One way to instill some more personality into the boids is to give them emotions. A pretty primitive emotion to
+    give something is fear as its effects are pretty obvious. This <a
+      href="https://link.springer.com/article/10.1007/s00354-007-0009-5">paper</a> goes into using the boids algorithm
+    to model grazing deers inside of a virtual envrionment to give it more realism. They then extended the algorithm to
+    have the emotion fear, and they used phermones as the way to transmit that fear. They used a much more complicated
+    way of transmitting the pheromones like using <i>Law of Atmospheres</i> to determine the area that the pheromones
+    have dispersed. The algorithm shown below works similarly but uses a simple triangular function to model
+    growth and then decay of the area of pheromones.</p>
 
-    <script src="js/boids.js"></script>
-    <h3>Vicsek Model</h3>
+  <p>For the simulation below Boids fear your mouse cursor. When they see it they will panic and run away in a random
+    direction to get away. When they panic they release pheromones behind them. Pheromones cause panic as well as
+    releasing their own bit weaker pheromones as they didn't see the threat directly.</p>
+  <canvas id="BoidsCanvas1" width="800" height="600"></canvas><br>
+  <button onclick="startSim(1)">Start</button>
+  <button onclick="stopSim(1)">Stop</button>
+  <button onclick="resetSim(1)">Reset</button>
 
-    <h2>Bezier Curves</h2>
-    <div id="bezierContainer" style="position: relative; width: 800px; height: 600px;">
-      <canvas id="BezierCanvas" width="800" height="600"></canvas>
-      <div id="nodes" style="position: absolute; top: 0; left: 0;"></div>
-    </div>  
-      
-    <div class="controls">
-      <button class="button" id="drawLinesButton">Draw Lines</button>
-      <button class="button" id="drawArcButton">Draw Arc</button>
-      <input id="progress" type="range" min="0" max="1" step="0.001">
-      <p id="progress-num"></p>
-      <input id="numOfNodes" type="number">
-      <button id="generateNodesButton">Generate</button>
-    </div>
-    <script src="js/bezier.js"></script>
-  </body>
+  <p>For this simulation below Boids follow the same pheromones algorithm but instead of fearing your mouse cursor they
+    fear the dreaded blue boid. Who in reality is just another slightly bigger Boid who follows the same rules as them.
+  </p>
+  <canvas id="BoidsCanvas2" width="800" height="600"></canvas><br>
+  <button onclick="startSim(2)">Start</button>
+  <button onclick="stopSim(2)">Stop</button>
+  <button onclick="resetSim(2)">Reset</button>
 
-  </html>
+  <script src="js/boids.js"></script>
+  <h3>Vicsek Model</h3>
+
+  <h2>Bezier Curves</h2>
+  <div id="bezierContainer" style="position: relative; width: 800px; height: 600px;">
+    <canvas id="BezierCanvas" width="800" height="600"></canvas>
+    <div id="nodes" style="position: absolute; top: 0; left: 0;"></div>
+  </div>
+
+  <div class="controls">
+    <button class="button" id="drawLinesButton">Draw Lines</button>
+    <button class="button" id="drawArcButton">Draw Arc</button>
+    <input id="progress" type="range" min="0" max="1" step="0.001">
+    <p id="progress-num"></p>
+    <input id="numOfNodes" type="number">
+    <button id="generateNodesButton">Generate</button>
+  </div>
+  <script src="js/bezier.js"></script>
+</body>
+
+</html>

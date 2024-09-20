@@ -93,20 +93,28 @@ class Boid {
     this.escapeDirectionY = 0;
     this.separationAx = 0;
     this.separationAy = 0;
+
+    // Predator
+    this.isPredator = options.isPredator || false;
+
+    // Color and Shape
+    this.size = options.size || 1.5;
+    this.color = options.color || "black";
+    this.vel_vector_size = options.vel_vector_size || 5;
   }
 
   // Draw the boid
   draw(ctx) {
-    ctx.strokeStyle = "black";
+    ctx.strokeStyle = this.color;
     // Draw Boid position
     ctx.beginPath();
-    ctx.arc(this.x, this.y, 1.5, 0, 2 * Math.PI);
+    ctx.arc(this.x, this.y, this.size, 0, 2 * Math.PI);
     ctx.stroke();
 
     // Draw Boid velocity vector
     ctx.beginPath();
     ctx.moveTo(this.x, this.y);
-    ctx.lineTo(this.x + this.vx * 5, this.y + this.vy * 5);
+    ctx.lineTo(this.x + this.vx * this.vel_vector_size, this.y + this.vy * this.vel_vector_size);
     ctx.stroke();
   }
 
@@ -293,7 +301,34 @@ class Boid {
 
     return { fearStrength: 0 };
   }
+  
+  look_for_predators(boids) {
+    let escapeX = 0;
+    let escapeY = 0;
+    let predators = 0;
+    for (let boid of boids) {
+      if (boid.isPredator) {
+        if (this.index == boid.index) {
+          continue;
+        }
+        let distance = this.distanceFromPosition(boid.x, boid.y);
+        if (distance < this.sight) {       
+          escapeX += this.x - boid.x;
+          escapeY += this.y - boid.y;
+        }
+        predators++;
+      }
+    }
+    if (predators > 0) {
+      let avgEscapeX = escapeX / predators;
+      let avgEscapeY = escapeY / predators;
+      return [avgEscapeX * 0.01 , avgEscapeY * 0.01];
+    } else {
+      return [0, 0];
+    }
+  }
 }
+
 
 class BoidSimulationConfig {
   constructor(options = {}) {
@@ -301,6 +336,8 @@ class BoidSimulationConfig {
     this.fearEnabled = options.fearEnabled || false;
     this.interval = options.interval || 16.67;
     this.boidOptions = options.boidOptions || {};
+    this.predatorOptions = options.predatorOptions || {};
+    this.amount_of_predators = options.amount_of_predators || 0;
   }
 }
 
@@ -334,6 +371,18 @@ class BoidSimulation {
         )
       );
     }
+    console.log(this.config.amount);
+    for (let i = 0; i < this.config.amount_of_predators; i++) {
+      console.log("Wheres my preadtor");
+      this.boids.push(
+        new Boid(
+          Math.random() * this.canvas.width,
+          Math.random() * this.canvas.height,
+          i + this.numBoids,
+          this.config.predatorOptions
+        )
+      )
+    }
   }
 
   getMousePos(evt) {
@@ -366,7 +415,7 @@ class BoidSimulation {
     for (let boid of this.boids) {
       boid.borderCheck(this.canvas.width, this.canvas.height);
 
-      if (this.config.fearEnabled) {
+      if (this.config.fearEnabled && !boid.isPredator) {
         boid.calculateFear(this.pheromones);
       }
 
@@ -383,6 +432,15 @@ class BoidSimulation {
         boid.fearTimer--;
       }
 
+      if (this.config.amount_of_predators > 0) {
+        var [predatorsX, predatorsY] = boid.look_for_predators(this.boids);
+        if (predatorsX != 0 || predatorsY != 0) {
+          boid.releasePheromone(this.pheromones, 17.5, 40);
+        }
+      } else {
+        var [predatorsX, predatorsY] = [0, 0];
+      }
+
       const [separationX, separationY] = boid.calculateSeparation(this.boids);
       boid.separationAx = separationX;
       boid.separationAy = separationY;
@@ -393,8 +451,8 @@ class BoidSimulation {
         const [alignmentX, alignmentY] = boid.calculateAlignment(this.boids);
         const [cohesionX, cohesionY] = boid.calculateCohesion(this.boids);
 
-        boid.ax = separationX + alignmentX + cohesionX;
-        boid.ay = separationY + alignmentY + cohesionY;
+        boid.ax = separationX + alignmentX + cohesionX + predatorsX;
+        boid.ay = separationY + alignmentY + cohesionY + predatorsY;
       }
 
       boid.update();
@@ -433,10 +491,29 @@ function createSimulations() {
     interval: 16.67,
     boidOptions: {}
   });
-  const sim1 = new BoidSimulation('BoidsCanvas1', 250, sim1Config);
+  const sim1 = new BoidSimulation('BoidsCanvas1', 100, sim1Config);
 
+  const sim2Config = new BoidSimulationConfig({
+    mouseAsObject: false,
+    fearEnabled: true,
+    interval: 16.67,
+    boidOptions: {},
+    amount_of_predators: 2,
+    predatorOptions: {
+      size: 5,
+      color: "blue",
+      isPredator: true,
+      sight: 150,
+      minV: 3,
+      maxV: 6,
+      centering: 0.005,
+      avoidance: 0,
+    }
+  });
+  const sim2 = new BoidSimulation('BoidsCanvas2', 100, sim2Config);
   simulations.push(sim0);
   simulations.push(sim1);
+  simulations.push(sim2);
 }
 
 function startSim(index) {
